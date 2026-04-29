@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIS Technical Exam Suite</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --text: #0f172a;
+            --card: #ffffff;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+        .container { max-width: 800px; margin: 40px auto; position: relative; }
+        
+        /* Fixed Score Counter */
+        .score-stats {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-weight: 700;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 1000;
+            border: 2px solid #e2e8f0;
+        }
+        .stat-item { display: flex; justify-content: space-between; gap: 20px; }
+        .text-success { color: var(--success); }
+        .text-error { color: var(--error); }
+
+        /* Menu Screen */
+        #menu-screen { text-align: center; padding: 40px; }
+        .menu-btn {
+            display: block;
+            width: 100%;
+            max-width: 450px;
+            margin: 15px auto;
+            padding: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background: var(--card);
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .menu-btn:hover { background: var(--primary); color: white; }
+
+        /* Quiz UI */
+        #quiz-screen { display: none; }
+        .question-card {
+            background: var(--card);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 0.95em;
+            margin: 15px 0;
+        }
+        .options { display: grid; gap: 12px; margin-top: 20px; }
+        button.option {
+            text-align: left;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.2s;
+        }
+        button.option:hover { background: #f8fafc; border-color: #cbd5e1; }
+        button.option.is-correct { background-color: #d1fae5 !important; border-color: var(--success) !important; color: #065f46; font-weight: bold; }
+        button.option.is-wrong { background-color: #fee2e2 !important; border-color: var(--error) !important; color: #991b1b; }
+
+        .nav-controls { display: flex; justify-content: space-between; margin-top: 20px; }
+        .btn-nav { padding: 12px 30px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: 600; cursor: pointer; }
+        .btn-nav:disabled { background: #cbd5e1; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+<div class="score-stats" id="stats-box" style="display: none;">
+    <div class="stat-item"><span>Correct:</span> <span class="text-success" id="correct-count">0</span></div>
+    <div class="stat-item"><span>Wrong:</span> <span class="text-error" id="wrong-count">0</span></div>
+</div>
+
+<div class="container">
+    <div id="menu-screen">
+        <h1>CIS Exam Reviewer</h1>
+        <p>Both sets cover <strong>AJAX, jQuery, and JavaScript</strong> logic.</p>
+        <button class="menu-btn" onclick="startQuiz(1)">Reviewer Set A (30 Items)</button>
+        <button class="menu-btn" onclick="startQuiz(2)">Reviewer Set B (30 Items)</button>
+    </div>
+
+    <div id="quiz-screen">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2 id="reviewer-title" style="margin: 0;">Reviewer Set</h2>
+            <p>Question <span id="current-idx">1</span> of 30</p>
+        </div>
+        <div id="question-content"></div>
+        <div class="nav-controls">
+            <button class="btn-nav" id="prev-btn" onclick="move(-1)">Previous</button>
+            <button class="btn-nav" id="next-btn" onclick="move(1)">Next</button>
+        </div>
+        <button class="menu-btn" style="margin-top: 40px; font-size: 0.9rem; padding: 12px;" onclick="location.reload()">Back to Menu</button>
+    </div>
+</div>
+
+<script>
+    const reviewer1 = [
+        { q: "You are processing a shopping cart. What is the output of the following operation?", code: "const prices = [10, 20, 30];\nconst result = prices.map(p => p * 2).filter(p => p > 30);\nconsole.log(result);", options: ["A) [20, 40, 60]", "B) [40, 60]", "C) [20]", "D) []"], correct: 1 },
+        { q: "A developer uses a 'logical OR' assignment for a default username. What gets logged on the console?", code: "let user = \"\";\nlet displayName = user || \"Guest\";\nconsole.log(displayName);", options: ["A) \"\" (Empty string)", "B) undefined", "C) \"Guest\"", "D) null"], correct: 2 },
+        { q: "You are checking object references in a state management system. What gets logged on the console?", code: "const a = { id: 1 };\nconst b = { id: 1 };\nconst c = a;\nconsole.log(a === b, a === c);", options: ["A) true true", "B) false false", "C) true false", "D) false true"], correct: 3 },
+        { q: "When testing a loop with a post-increment operator. What gets logged on the console?", code: "let count = 0;\nfor(let i = 0; i < 3; i++) {\n    count += i;\n}\nconsole.log(count);", options: ["A) 3", "B) 6", "C) 0", "D) 2"], correct: 0 },
+        { q: "You define a function with a rest parameter. What gets logged on the console?", code: "function sum(x, ...y) {\n    return x + y.length;\n}\nconsole.log(sum(10, 1, 2, 3));", options: ["A) 16", "B) 13", "C) 10", "D) NaN"], correct: 1 },
+        { q: "You have a button defined below. What gets logged on the console when the code gets executed?", code: "<button id=\"btn\" class=\"old\">Click</button>\n\nconst btn = document.querySelector('#btn');\nbtn.classList.replace('old', 'new');\nconsole.log(btn.className);", options: ["A) \"old new\"", "B) \"new\"", "C) \"old\"", "D) undefined"], correct: 1 },
+        { q: "A jQuery click handler is attached to a list as shown on the code snippet below. What is this technique called?", code: "$('ul').on('click', 'li', function() {\n    console.log($(this).text());\n});", options: ["A) Event Bubbling", "B) Event Capture", "C) Event Delegation", "D) Event Throttling"], correct: 2 },
+        { q: "You receive this string from a server. What is the proper way of accessing the age member inside the data object?", code: "let data = '{\"name\":\"Dev\", \"age\":25}';", options: ["A) data.age", "B) JSON.parse(data).age", "C) JSON.stringify(data).age", "D) data[\"age\"]"], correct: 1 },
+        { q: "What is the output of the following code snippet below?", code: "const user = { name: \"AI\", date: new Date() };\nconst json = JSON.stringify(user);\nconsole.log(typeof json);", options: ["A) \"object\"", "B) \"json\"", "C) \"string\"", "D) \"undefined\""], correct: 2 },
+        { q: "Which among the code lines below is an invalid JSON?", options: ["A) {\"id\": 101}", "B) {\"name\": 'John'}", "C) [1, 2, 3]", "D) {\"active\": true}"], correct: 1 },
+        { q: "What is the output of the code snippet below?", code: "console.log(typeof NaN);", options: ["A) \"number\"", "B) \"NaN\"", "C) \"undefined\"", "D) \"object\""], correct: 0 },
+        { q: "What is the output of the code snippet below?", code: "let a = [1, 2]; let b = a; b.push(3);\nconsole.log(a.length);", options: ["A) 2", "B) 3", "C) undefined", "D) Error"], correct: 1 },
+        { q: "What is the output of the code snippet below?", code: "console.log(0.1 + 0.2 === 0.3);", options: ["A) true", "B) false", "C) null", "D) undefined"], correct: 1 },
+        { q: "What is the output of the code snippet below?", code: "const x = [1, 2, 3]; const [y] = x;\nconsole.log(y);", options: ["A) [1]", "B) 1", "C) undefined", "D) [1, 2, 3]"], correct: 1 },
+        { q: "What is the output of the code snippet below?", code: "for (var i = 0; i < 3; i++) {\n    setTimeout(() => console.log(i), 1);\n}", options: ["A) 0, 1, 2", "B) 3, 3, 3", "C) 2, 2, 2", "D) 0, 0, 0"], correct: 1 },
+        { q: "What is the output of the code snippet below?", code: "const obj = { prop: 1 };\nconst arr = [obj];\nobj.prop = 2;\nconsole.log(arr[0].prop);", options: ["A) 1", "B) 2", "C) undefined", "D) ReferenceError"], correct: 1 },
+        { q: "What is the output of the code snippet below?", code: "document.body.innerHTML = \"<button>Hi</button>\";\nconsole.log(document.body.childNodes.length);", options: ["A) 0", "B) 1", "C) 2", "D) 3"], correct: 1 },
+        { q: "What is the output of the code snippet below? (jQuery)", code: "$(\"p\").css(\"color\", \"red\").slideUp().fadeIn();\nWhat is this called?", options: ["A) Chaining", "B) Bubbling", "C) Shadowing", "D) Hoisting"], correct: 0 },
+        { q: "What is the output of the code snippet below?", code: "JSON.stringify({ a: undefined, b: 2 });", options: ["A) {\"a\":null,\"b\":2}", "B) {\"b\":2}", "C) {\"a\":undefined,\"b\":2}", "D) Error"], correct: 1 },
+        { q: "What is the output of the code snippet below?", code: "let x = 5; let y = x++; console.log(x, y);", options: ["A) 5, 5", "B) 6, 6", "C) 6, 5", "D) 5, 6"], correct: 2 },
+        { q: "What is the output of the code snippet below?", code: "const arr = [10, 20, 30];\narr[10] = 100;\nconsole.log(arr.length);", options: ["A) 3", "B) 4", "C) 10", "D) 11"], correct: 3 },
+        { q: "What does the true parameter signify from the code snippet below?", code: "document.getElementById(\"myDiv\").addEventListener(\"click\", () => {\n    console.log(\"Clicked!\");\n}, true);", options: ["A) The event will bubble up.", "B) The event listener is active.", "C) The event is handled in the Capturing phase.", "D) The event can only be clicked once."], correct: 2 },
+        { q: "What is the output of the code snippet below?", code: "const json = '{\"value\": 0123}';\nJSON.parse(json);", options: ["A) { value: 123 }", "B) { value: 0123 }", "C) SyntaxError", "D) null"], correct: 2 },
+        { q: "What is the output of the code snippet below?", code: "const x = [1, 2, 3];\nconst y = x.map(num => {\n    if (num < 2) return;\n    return num * 2;\n});\nconsole.log(y);", options: ["A) [4, 6]", "B) [undefined, 4, 6]", "C) [null, 4, 6]", "D) [2, 4, 6]"], correct: 1 },
+        { q: "What is the output of the code snippet below?", code: "console.log(false == '0');\nconsole.log(false === '0');", options: ["A) true, true", "B) false, false", "C) true, false", "D) false, true"], correct: 2 },
+        { q: "What is the output of the code snippet below?", code: "let a = { name: \"Dev\" };\nlet b = { ...a };\nb.name = \"Admin\";\nconsole.log(a.name);", options: ["A) \"Admin\"", "B) \"Dev\"", "C) undefined", "D) TypeError"], correct: 1 },
+        { q: "What is the output of the code snippet below?", code: "let i = 5;\nwhile (i > 0) {\n    i--;\n    if (i === 3) continue;\n    console.log(i);\n    break;\n}", options: ["A) 4", "B) 4, 2, 1, 0", "C) 3", "D) 5"], correct: 0 },
+        { q: "What is the output of the code snippet below?", code: "const target = { a: 1 };\nconst source = { b: 2, c: 3 };\nconst result = Object.assign(target, source);\nconsole.log(target === result);", options: ["A) false", "B) true", "C) undefined", "D) ReferenceError"], correct: 1 },
+        { q: "What is the output of the code snippet below?", code: "document.body.innerHTML = '<div id=\"box\"></div>';\nconst box = document.getElementById(\"box\");\nbox.id = \"newBox\";\nconsole.log(document.getElementById(\"box\"));", options: ["A) <div id=\"newBox\">", "B) null", "C) <div id=\"box\">", "D) undefined"], correct: 1 },
+        { q: "What is the output of the code snippet below?", code: "let x = 10;\nfunction change() {\n    x = 20;\n    return;\n    function x() {}\n}\nchange();\nconsole.log(x);", options: ["A) 10", "B) 20", "C) undefined", "D) ReferenceError"], correct: 0 }
+    ];
+
+    const reviewer2 = [
+        { q: "1. What is the output of the following jQuery snippet?", code: "$(\"span\").html(\"<u>Hi</u>\");\nconsole.log($(\"span\").text());", options: ["A) <u>Hi</u>", "B) Hi", "C) Hi (underlined)", "D) null"], correct: 1 },
+        { q: "2. Given this AJAX call, what is logged if the server returns [\"Apple\", \"Orange\"]?", code: "$.ajax({\n  url: \"/api/fruits\",\n  success: function(data) {\n    console.log(Array.isArray(data));\n  }\n});", options: ["A) true", "B) false", "C) string", "D) undefined"], correct: 0 },
+        { q: "3. What will be the console output?", code: "const div = document.createElement(\"div\");\ndiv.innerText = \"Original\";\ndiv.textContent = \"Updated\";\nconsole.log(div.innerText);", options: ["A) Original", "B) Updated", "C) Original Updated", "D) undefined"], correct: 1 },
+        { q: "4. Consider this HTML: <section id=\"main\" class=\"active\"></section>. What is logged?", code: "const sec = document.getElementById(\"main\");\nsec.classList.remove(\"active\");\nsec.classList.toggle(\"hidden\");\nconsole.log(sec.className);", options: ["A) active hidden", "B) active", "C) hidden", "D) main hidden"], correct: 2 },
+        { q: "5. What is the output?", code: "const car = { make: \"Ford\", year: 2020 };\nconst result = JSON.stringify(car, [\"make\"]);\nconsole.log(result);", options: ["A) {\"make\":\"Ford\",\"year\":2020}", "B) {\"make\":\"Ford\"}", "C) {\"year\":2020}", "D) [\"make\"]"], correct: 1 },
+        { q: "6. What is the result of this parsing attempt?", code: "const json = '{\"price\": 10.5, \"stock\": undefined}';\nconsole.log(JSON.parse(json));", options: ["A) {price: 10.5}", "B) {price: 10.5, stock: null}", "C) SyntaxError", "D) undefined"], correct: 2 },
+        { q: "7. What is logged to the console after executing the code?", code: "function getGrade(score) {\n  return score >= 90 ? \"A\" : score >= 80 ? \"B\" : \"C\";\n}\nconsole.log(getGrade(85));", options: ["A) A", "B) B", "C) C", "D) undefined"], correct: 1 },
+        { q: "8. What is the final value of sum?", code: "let sum = 0;\nfor (let i = 1; i <= 4; i++) {\n  if (i % 2 !== 0) continue;\n  sum += i;\n}\nconsole.log(sum);", options: ["A) 10", "B) 4", "C) 6", "D) 2"], correct: 2 },
+        { q: "9. What is the value of k after the loop?", code: "let k = 10;\nwhile (k > 5) {\n  if (k === 7) break;\n  k--;\n}\nconsole.log(k);", options: ["A) 10", "B) 5", "C) 7", "D) 6"], correct: 2 },
+        { q: "10. What is the output of the following scoping test?", code: "let y = 10;\nif (true) {\n  let y = 20;\n}\nconsole.log(y);", options: ["A) 10", "B) 20", "C) undefined", "D) ReferenceError"], correct: 0 },
+        { q: "11. What is the result of the following logical expression?", code: "const val = (\"\" && \"JS\") || (0 || \"Web\");\nconsole.log(val);", options: ["A) JS", "B) \"\"", "C) 0", "D) Web"], correct: 3 },
+        { q: "12. What is logged by this loop?", code: "let res = \"\";\nfor (let i = 0; i < 6; i += 3) {\n  res += i;\n}\nconsole.log(res);", options: ["A) 036", "B) 03", "C) 36", "D) 0"], correct: 1 },
+        { q: "13. What is the output?", code: "const vals = [10, 20, 30];\nconst output = vals.filter(v => v > 15).map(v => v - 5);\nconsole.log(output);", options: ["A) [15, 25]", "B) [20, 30]", "C) [10, 20]", "D) [5, 15, 25]"], correct: 0 },
+        { q: "14. What does the following return?", code: "function findFirst(arr) {\n  for (let s of arr) {\n    if (s.startsWith(\"B\")) return s;\n  }\n}\nconsole.log(findFirst([\"Apple\", \"Banana\", \"Berry\"]));", options: ["A) [\"Banana\", \"Berry\"]", "B) Banana", "C) Berry", "D) undefined"], correct: 1 },
+        { q: "15. What is the result of the following?", code: "const items = [1, 2, 3];\nconsole.log(items.reduce((acc, curr) => acc * curr, 2));", options: ["A) 6", "B) 12", "C) 8", "D) 5"], correct: 1 },
+        { q: "16. What is the output?", code: "const colors = [\"red\", \"green\"];\ncolors[4] = \"blue\";\nconsole.log(colors[2]);", options: ["A) null", "B) blue", "C) undefined", "D) \"\""], correct: 2 },
+        { q: "17. What does every() return here?", code: "const scores = [10, 20, 30];\nconsole.log(scores.every(s => s > 5));", options: ["A) true", "B) false", "C) 10", "D) undefined"], correct: 0 },
+        { q: "18. What is logged on the console?", code: "let arr1 = [5, 10];\nlet arr2 = [...arr1];\narr2.push(15);\nconsole.log(arr1.length);", options: ["A) 2", "B) 3", "C) 1", "D) 0"], correct: 0 },
+        { q: "19. What is logged?", code: "const user = { role: \"admin\" };\nfunction change(o) {\n  o.role = \"guest\";\n}\nchange(user);\nconsole.log(user.role);", options: ["A) admin", "B) guest", "C) undefined", "D) Object"], correct: 1 },
+        { q: "20. What is the result of the following?", code: "const box = { w: 10, h: 20 };\nlet total = 0;\nfor (let prop in box) {\n  total += box[prop];\n}\nconsole.log(total);", options: ["A) 0", "B) 1020", "C) 30", "D) w h"], correct: 2 },
+        { q: "21. What is the output?", code: "const machine = {\n  id: \"M1\",\n  getId: function() { return this.id; }\n};\nconst unbound = machine.getId;\nconsole.log(unbound() === \"M1\");", options: ["A) true", "B) false", "C) TypeError", "D) undefined"], correct: 1 },
+        { q: "22. What is the final total?", code: "function getPrice(list) {\n  let res = 0;\n  for (let item of list) {\n    res += item.cost * (item.tax || 1.1);\n  }\n  return res;\n}\nconst order = [{cost: 100, tax: 1}, {cost: 10}];\nconsole.log(getPrice(order));", options: ["A) 110", "B) 111", "C) 121", "D) 100"], correct: 1 },
+        { q: "23. What is the output?", code: "const users = [\n  { id: 1, val: \"A\" },\n  { id: 2, val: \"B\" }\n];\nconst check = users.find(u => u.id === 3);\nconsole.log(check ? \"Found\" : \"Missing\");", options: ["A) Found", "B) Missing", "C) undefined", "D) null"], correct: 1 },
+        { q: "24. What does the following return?", code: "function fact(n) {\n  if (n <= 1) return 1;\n  return n * fact(n - 1);\n}\nconsole.log(fact(3));", options: ["A) 3", "B) 6", "C) 9", "D) 1"], correct: 1 },
+        { q: "25. What is the output?", code: "let out = \"\";\nconst arr = [1, null, \"hi\", 0];\nfor (let x of arr) {\n  out += x ? \"Y\" : \"N\";\n}\nconsole.log(out);", options: ["A) YNNN", "B) YNYN", "C) YYNN", "D) YNYY"], correct: 1 },
+        { q: "26. What is logged?", code: "const propName = \"level\";\nconst player = {\n  [propName]: 5,\n  level: 10\n};\nconsole.log(player.level);", options: ["A) 5", "B) 10", "C) level", "D) undefined"], correct: 1 },
+        { q: "27. In a standard $.ajax call, which property is used to specify the HTTP method?", options: ["A) methodType", "B) type", "C) action", "D) dataType"], correct: 1 },
+        { q: "28. What is the console output if the request succeeds?", code: "$.post(\"/api/save\")\n  .done(() => console.log(\"Success\"))\n  .fail(() => console.log(\"Error\"))\n  .always(() => console.log(\"Finished\"));", options: ["A) Success", "B) Success Finished", "C) Finished", "D) Error Finished"], correct: 1 },
+        { q: "29. What does JSON.parse() typically do when handling an AJAX response?", options: ["A) Converts an object into a string", "B) Converts a JSON string into a JavaScript object", "C) Sets the request headers", "D) Deletes the response data"], correct: 1 },
+        { q: "30. What is the output?", code: "document.body.innerHTML = '<span id=\"x\">Init</span>';\nconst target = document.getElementById(\"x\");\ntarget.innerHTML = '<b>Done</b>';\nconsole.log(target.tagName);", options: ["A) B", "B) SPAN", "C) null", "D) undefined"], correct: 1 }
+    ];
+
+    let activeSet = [];
+    let currentIdx = 0;
+    let userAnswers = [];
+
+    function startQuiz(setNum) {
+        activeSet = (setNum === 1) ? reviewer1 : reviewer2;
+        userAnswers = new Array(activeSet.length).fill(null);
+        document.getElementById('reviewer-title').innerText = "Reviewer Set " + (setNum === 1 ? "A" : "B");
+        document.getElementById('menu-screen').style.display = 'none';
+        document.getElementById('quiz-screen').style.display = 'block';
+        document.getElementById('stats-box').style.display = 'flex';
+        currentIdx = 0;
+        render();
+    }
+
+    function render() {
+        const q = activeSet[currentIdx];
+        const selected = userAnswers[currentIdx];
+        document.getElementById('current-idx').innerText = currentIdx + 1;
+        
+        let html = `<div class="question-card">
+            <p style="font-size: 1.1rem;"><strong>${q.q}</strong></p>
+            ${q.code ? `<pre><code>${q.code.replace(/</g, "&lt;")}</code></pre>` : ''}
+            <div class="options">
+                ${q.options.map((opt, i) => {
+                    let cls = "";
+                    if (selected !== null) {
+                        if (i === q.correct) cls = "is-correct";
+                        else if (i === selected) cls = "is-wrong";
+                    }
+                    return `<button class="option ${cls}" onclick="pick(${i})">${opt}</button>`;
+                }).join('')}
+            </div>
+        </div>`;
+        
+        document.getElementById('question-content').innerHTML = html;
+        document.getElementById('prev-btn').disabled = currentIdx === 0;
+        document.getElementById('next-btn').innerText = (currentIdx === activeSet.length - 1) ? "Finish" : "Next";
+        updateStats();
+    }
+
+    function pick(idx) {
+        userAnswers[currentIdx] = idx;
+        render();
+    }
+
+    function move(step) {
+        if (step === 1 && currentIdx === activeSet.length - 1) {
+            alert("Quiz finished! You can review your answers or return to the menu.");
+            return;
+        }
+        currentIdx += step;
+        render();
+    }
+
+    function updateStats() {
+        let correct = 0, wrong = 0;
+        userAnswers.forEach((ans, i) => {
+            if (ans !== null) {
+                if (ans === activeSet[i].correct) correct++;
+                else wrong++;
+            }
+        });
+        document.getElementById('correct-count').innerText = correct;
+        document.getElementById('wrong-count').innerText = wrong;
+    }
+</script>
+</body>
+</html>
